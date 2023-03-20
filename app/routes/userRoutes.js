@@ -11,4 +11,7 @@ router.get("/getAll", SignInController.findAll);
 router.post("/signUp", SignInController.signUp);
 router.post("/login", LoginController.LogIn);
 
+
+router.get("/emailConfirm", LoginController.EmailConfirm);
+
 module.exports = router;

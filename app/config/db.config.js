@@ -1,5 +1,6 @@
 module.exports = {
   HOST: "localhost",
+  PORT: "3306",
   USER: "root",
   PASSWORD: "",
   DB: "testdb",
@@ -10,8 +11,4 @@ module.exports = {
     acquire: 30000,
     idle: 10000
   },
-  mail:{
-    auth: 'fatkullov@inbox.ru',
-    pass: '0T5hwbAcxS3Pxzma8Fpj'
-  }
 };
