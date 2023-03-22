@@ -7,11 +7,12 @@ const LoginController = require("../controller/user.LoginController.js");
 
 
 router.get("/getAll", SignInController.findAll);
-
 router.post("/signUp", SignInController.signUp);
+
 router.post("/login", LoginController.LogIn);
-
-
 router.get("/emailConfirm", LoginController.EmailConfirm);
+
+router.post("/changePassword", LoginController.ChangePassword);
+router.post("/changePassToEmail", LoginController.ChangePasswordSendToEmail)
 
 module.exports = router;

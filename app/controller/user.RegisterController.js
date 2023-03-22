@@ -1,6 +1,6 @@
 const db = require("../models/");
 const User = db.user;
-const Op = db.Sequelize.Op;
+const sendmail = require('sendmail')();
 
 const crypto = require("crypto")
 const hbc = require("../config/host.config")
@@ -15,8 +15,7 @@ exports.signUp = (req, res) => {
         if (user.length > 0) {
             res.json({ success: false, statusCode: 302, message: 'Пользователь с таким email уже существует' });
         } else {
-
-            var token = crypto.randomBytes(16).toString("hex");
+            const token = crypto.randomBytes(16).toString("hex");
             User.create({
                 firstName: req.body.firstName,
                 lastName: req.body.lastName,
@@ -25,36 +24,17 @@ exports.signUp = (req, res) => {
                 active: 0,
                 token: token
             }).then(function () {
-                const em = req.body.email;
-                const nodemailer = require('nodemailer');
-                
-                // Создаем объект transporter с настройками почтового сервера
-                const transporter = nodemailer.createTransport({
-                    host: 'smtp.mail.ru',
-                    port: 587,
-                    secure: false,
-                    auth: {
-                        user: hbc.mail.auth,
-                        pass: hbc.mail.pass
-                    }
-                });
-
-                const emailTemplate = ({ link }) => `<p>Перейдите по ссылке:  <a href="${link}">${link}</a></p>`;
-
-                // Настройки письма
-                const mailOptions = {
-                    from: hbc.mail.auth,
+                const href = `${hbc.HOST}/api/emailConfirm?token=${token}&email=${req.body.email}`;
+                sendmail({
+                    from: 'no-reply@mydomain.com',
                     to: req.body.email,
-                    subject: 'Подтвержение аккаунта',
-                    html: emailTemplate({ link: `${hbc.HOST}/api/emailConfirm?token=${token}&email=${em}`})
-                };
-
-                // Отправляем письмо
-                transporter.sendMail(mailOptions, function (error, info) {
-                    if (error) {
+                    subject: 'Тестовое сообщение',
+                    html: `Перейдите по ссылке: <a href="${href}">${href}<a/>`,
+                }, function (err, reply) {
+                    if (err) {
                         console.log(error);
                     } else {
-                        console.log('Письмо успешно отправлено: ' + info.response);
+                        console.log('Письмо успешно отправлено: ' + reply);
                     }
                 });
                 res.json({ success: true, statusCode: 200, message: "Регистрация прошла успешно. Для подтверждения ученой записи пройдите по ссылке отправленной на почту." });

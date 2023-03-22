@@ -1,21 +1,11 @@
 const db = require("../models");
 const User = db.user;
-const Op = db.Sequelize.Op;
 const hbc = require("../config/host.config");
-const { where } = require("sequelize");
-const { use } = require("../routes/userRoutes");
+const htmp = require("../htmlTemplates")
+const sendmail = require('sendmail')();
 
-
-
-/*require('crypto').randomBytes(16, function(err, buffer){
-    var token = buffer.toString('hex');
-    
-});*/
 
 exports.LogIn = (req, res) => {
-
-    const em = req.body.email;
-
     User.findAll({
         limit: 1,
         where: {
@@ -30,39 +20,21 @@ exports.LogIn = (req, res) => {
             } else {
 
                 if (user[0].active == "0") {
-                    const em = req.body.email;
-                    const nodemailer = require('nodemailer');
-
-                    // Создаем объект transporter с настройками почтового сервера
-                    const transporter = nodemailer.createTransport({
-                        host: 'smtp.mail.ru',
-                        port: 587,
-                        secure: false,
-                        auth: {
-                            user: hbc.mail.auth,
-                            pass: hbc.mail.pass
-                        }
-                    });
-
-                    const emailTemplate = ({ link }) => `<p>Перейдите по ссылке:  <a href="${link}">${link}</a></p>`;
-                    const token = user[0].token;
-                    // Настройки письма
-                    const mailOptions = {
-                        from: hbc.mail.auth,
+                    const href = `${hbc.HOST}/api/emailConfirm?token=${user[0].token}&email=${req.body.email}`;
+                    sendmail({
+                        from: 'no-reply@mydomain.com',
                         to: req.body.email,
-                        subject: 'Подтвержение аккаунта',
-                        html: emailTemplate({ link: `${hbc.HOST}/api/emailConfirm?token=${token}&email=${em}` })
-                    };
-
-                    // Отправляем письмо
-                    transporter.sendMail(mailOptions, function (error, info) {
-                        if (error) {
+                        subject: 'Тестовое сообщение',
+                        html: `Перейдите по ссылке: <a href="${href}">${href}<a/>`,
+                    }, function (err, reply) {
+                        if (err) {
                             console.log(error);
                         } else {
-                            console.log('Письмо успешно отправлено: ' + info.response);
+                            console.log('Письмо успешно отправлено: ' + reply);
                         }
                     });
-                    res.json({ success: true, statusCode: 200, message: 'Подтвердите учетную запись. Перейдите по ссылке отправленной на почту ' + em },);
+
+                    res.json({ success: true, statusCode: 201, message: 'Подтвердите учетную запись. Перейдите по ссылке отправленной на почту.' },);
                 } else {
                     res.json({ success: true, statusCode: 200, message: 'Авторизация прошла успешно' },);
                 }
@@ -91,7 +63,7 @@ exports.EmailConfirm = (req, res) => {
             ).then(res => {
                 console.log(res)
             });
-            res.json({ mes: "Учетная запись подтверждена" })
+            res.end(htmp.accountConfirm());
         } else {
             res.json({ mes: "Проблема с токеном авторизации. Обратитесь в поддержку" })
         }
@@ -103,18 +75,32 @@ exports.EmailConfirm = (req, res) => {
 
 
 exports.ChangePassword = (req, res) => {
-    User.findAll({
-        limit: 1,
-        where: {
-            email: req.query.email
-        }
-    }).then(function (user) {
-        
-        
-
-        
+    User.update(
+        { password: req.body.password },
+        { where: { email: req.body.email } }
+    ).then(result => {
+        res.json({ statusCode: 200, message: "Пароль успешно заменен" })
+        console.log(result)
     }).catch(err => {
+        res.json({ statusCode: 400, message: "Ошибка смены пароля" })
         console.log(err)
-        res.json({ success: false, errorMessage: 'ERROR' });
+    })
+};
+
+exports.ChangePasswordSendToEmail = (req, res) => {
+
+    const href = `${hbc.CLIENT_HOST}/changePassword`;
+    sendmail({
+        from: 'no-reply@mydomain.com',
+        to: req.body.email,
+        subject: 'Ссылка на смену пароля',
+        html: `Перейдите по ссылке чтобы поменять пароль: <a href="${href}">${href}<a/>`,
+    }, function (err, reply) {
+        if (err) {
+            console.log(err);
+        } else {
+            res.json({message: "Ссылка на смену пароля отпарвлена на почту"});
+            console.log('Письмо успешно отправлено: ' + reply);
+        }
     });
 };
