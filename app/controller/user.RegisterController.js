@@ -32,7 +32,7 @@ exports.signUp = (req, res) => {
                     html: `Перейдите по ссылке: <a href="${href}">${href}<a/>`,
                 }, function (err, reply) {
                     if (err) {
-                        console.log(error);
+                        console.log(err);
                     } else {
                         console.log('Письмо успешно отправлено: ' + reply);
                     }
