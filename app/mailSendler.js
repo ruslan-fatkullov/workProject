@@ -1,4 +1,3 @@
-
 const nodemailer = require('nodemailer');
 const hbc = require("./config/host.config")
 // Создаем объект transporter с настройками почтового сервера
@@ -19,7 +18,7 @@ const mailOptions = {
     from: hbc.mail.auth,
     to: req.body.email,
     subject: 'Подтвержение аккаунта',
-    html: emailTemplate({ link: `${hbc.HOST}/emailConfirm"` })
+    html: emailTemplate({ link: `${hbс.HOST}/emailConfirm"` })
 };
 
 // Отправляем письмо

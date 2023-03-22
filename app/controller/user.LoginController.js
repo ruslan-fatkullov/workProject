@@ -1,7 +1,9 @@
 const db = require("../models");
 const User = db.user;
 const Op = db.Sequelize.Op;
-const hbс = require("../config/host.config")
+const hbc = require("../config/host.config");
+const { where } = require("sequelize");
+const { use } = require("../routes/userRoutes");
 
 
 
@@ -21,10 +23,10 @@ exports.LogIn = (req, res) => {
         }
     }).then(function (user) {
         if (user.length == 0) {
-            res.json({ success: false, statusCode: 403, Message: 'Пользователь с таким логином не найден' });
+            res.json({ success: false, statusCode: 403, message: 'Пользователь с таким логином не найден' });
         } else {
             if (!(user[0].password == req.body.password)) {
-                res.json({ success: false, statusCode: 403, Message: 'Неверный пароль' });
+                res.json({ success: false, statusCode: 403, message: 'Неверный пароль' });
             } else {
 
                 if (user[0].active == "0") {
@@ -37,19 +39,19 @@ exports.LogIn = (req, res) => {
                         port: 587,
                         secure: false,
                         auth: {
-                            user: hbс.mail.auth,
-                            pass: hbс.mail.pass
+                            user: hbc.mail.auth,
+                            pass: hbc.mail.pass
                         }
                     });
 
                     const emailTemplate = ({ link }) => `<p>Перейдите по ссылке:  <a href="${link}">${link}</a></p>`;
-
+                    const token = user[0].token;
                     // Настройки письма
                     const mailOptions = {
-                        from: hbс.mail.auth,
+                        from: hbc.mail.auth,
                         to: req.body.email,
                         subject: 'Подтвержение аккаунта',
-                        html: emailTemplate({ link: `${hbс.HOST}/emailConfirm"` })
+                        html: emailTemplate({ link: `${hbc.HOST}/api/emailConfirm?token=${token}&email=${em}` })
                     };
 
                     // Отправляем письмо
@@ -60,9 +62,9 @@ exports.LogIn = (req, res) => {
                             console.log('Письмо успешно отправлено: ' + info.response);
                         }
                     });
-                    res.json({ success: true, statusCode: 200, Message: 'Подтвердите учетную запись. Перейдите по ссылке отправленной на почту ' + em },);
+                    res.json({ success: true, statusCode: 200, message: 'Подтвердите учетную запись. Перейдите по ссылке отправленной на почту ' + em },);
                 } else {
-                    res.json({ success: true, statusCode: 200, Message: 'Авторизация прошла успешно' },);
+                    res.json({ success: true, statusCode: 200, message: 'Авторизация прошла успешно' },);
                 }
 
 
@@ -70,50 +72,49 @@ exports.LogIn = (req, res) => {
         }
     }).catch(err => {
         console.log(err)
-        res.json({ success: false, errorMessage: 'ERROR' });
+        res.json({ success: false, message: 'ERROR' });
     });
 
 };
 
 exports.EmailConfirm = (req, res) => {
-    res.json({ mes: "Учетная запись подтверждена" })
+    User.findAll({
+        limit: 1,
+        where: {
+            email: req.query.email
+        }
+    }).then(function (user) {
+        if (user[0].token == req.query.token) {
+            User.update(
+                { active: 1 },
+                { where: { email: req.query.email } }
+            ).then(res => {
+                console.log(res)
+            });
+            res.json({ mes: "Учетная запись подтверждена" })
+        } else {
+            res.json({ mes: "Проблема с токеном авторизации. Обратитесь в поддержку" })
+        }
+    }).catch(err => {
+        console.log(err)
+        res.json({ success: false, errorMessage: 'ERROR' });
+    });
 };
 
-/*const em = req.body.email;
 
-const nodemailer = require('nodemailer');
+exports.ChangePassword = (req, res) => {
+    User.findAll({
+        limit: 1,
+        where: {
+            email: req.query.email
+        }
+    }).then(function (user) {
+        
+        
 
-// Создаем объект transporter с настройками почтового сервера
-const transporter = nodemailer.createTransport({
-    host: 'smtp.mail.ru',
-    port: 587,
-    secure: false,
-    auth: {
-        user: dbc.mail.auth,
-        pass: dbc.mail.pass
-    }
-});
-
-// Настройки письма
-const mailOptions = {
-    from: dbc.mail.auth,
-    to: req.body.email,
-    subject: 'Тестовое сообщение',
-    text: 'Привет! Это тестовое сообщение.'
+        
+    }).catch(err => {
+        console.log(err)
+        res.json({ success: false, errorMessage: 'ERROR' });
+    });
 };
-
-// Отправляем письмо
-transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-        console.log(error);
-    } else {
-        console.log('____________________________________________');
-        console.log('Письмо успешно отправлено: ' + info.response);
-        console.log('____________________________________________');
-        res.json({ message: "Письмо успешно отправлено на почту:" + em });
-    }
-});*/
-
-
-
-
